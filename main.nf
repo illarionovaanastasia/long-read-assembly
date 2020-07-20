@@ -186,8 +186,9 @@ process minimap_phasing {
     file "output.bam" into aligned_reads
 	
   script:
+  
+  rtype = (params.lr_type == "nanopore") ? "map-ont" : "map-pb"
     """
-	rtype = ($params.lr_type == "nanopore") ? "map-ont" : "map-pb"
 	minimap2 -ax $rtype $reference $lreads |  samtools samtools sort -o output.bam
 	
   """
