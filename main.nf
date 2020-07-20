@@ -345,8 +345,6 @@ process quast_flye {
 	mv * /quast_hap2
     """
 }	
-
-}
     
 
 /*
