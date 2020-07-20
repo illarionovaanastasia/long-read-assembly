@@ -95,7 +95,7 @@ Channel
 Channel
         .fromPath( params.fasta )
         .ifEmpty { exit 1, "Cannot find a reference genome assembly: ${params.fasta}\nNB: Path needs to be enclosed in quotes!" }
-        .into { reference_map_phasing, reference_phasing; reference_scaffolding; sv_reference}
+        .into { reference_map_phasing; reference_phasing; reference_scaffolding; sv_reference}
 
 
 // Header log info
