@@ -54,7 +54,7 @@ if (params.help){
 }
 
 // Configurable variables
-params.fasta = false
+params.fasta = ""
 params.sv_detection = false
 params.Reads = ""
 params.email = false
