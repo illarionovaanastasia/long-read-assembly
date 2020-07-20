@@ -258,8 +258,8 @@ process minimappolishing {
     file "output2.sorted.bam" into polishing_alignment2
   
   script:
-    """
     rtype = ($params.lr_type == "nanopore") ? "map-ont" : "map-pb"
+    """
     minimap2 -ax $rtype $assembly1 $lreads |  samtools samtools sort -o output1.sorted.bam
     minimap2 -ax $rtype $assembly2 $lreads |  samtools samtools sort -o output2.sorted.bam
   """
@@ -345,6 +345,8 @@ process quast_flye {
 	mv * /quast_hap2
     """
 }	
+
+
     
 
 /*
