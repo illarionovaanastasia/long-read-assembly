@@ -245,8 +245,8 @@ process flye {
 
 
 // Map long reads to assembly with minimap2
-process minimap-polishing {
-  publishDir "${params.outdir}/minimap-polishing", mode: 'copy'
+process minimappolishing {
+  publishDir "${params.outdir}/minimappolishing", mode: 'copy'
   
   input:
     file lreads from reads_map_polishing
