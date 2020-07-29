@@ -343,8 +343,8 @@ process quast_flye {
   
   script:
     """
-    quast  $scaffolds1
-	quast  $scaffolds2
+    quast  $scaffolds1 -o quast_hap1
+	quast  $scaffolds2 -o quast_hap2
 
     """
 }	
