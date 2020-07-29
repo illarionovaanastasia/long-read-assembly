@@ -3,6 +3,7 @@ MAINTAINER Anastasia Illarionova <anastasia.illarionova@dzne.de>
 LABEL authors="anastasia.illarionova@dzne.de" \
     description="Docker image containing all requirements for long-read-assembly pipeline"
 
+RUN apt-get clean
 RUN apt-get update && apt-get install -y gcc g++ libboost-all-dev zlib1g-dev libbz2-dev make autoconf openssl libssl-dev cmake lzma-dev zlib1g-dev libcurl4-openssl-dev libcrypto++-dev libpthread-stubs0-dev libbz2-dev liblzma-dev libhdf5-dev python3-pip python3-virtualenv virtualenv
 
 #Install MUMer 4
@@ -24,6 +25,7 @@ ENV PATH=$PATH:/MUMandCo
 RUN git clone https://github.com/benedictpaten/marginPhase.git
 RUN cd marginPhase; git submodule update --init; mkdir build; cd build; cmake ..; make
 ENV PATH=$PATH:/marginPhase/build
+ENV PATH=$PATH:/marginPhase/params
 
 #Install Marginpolish-HELEN
 
@@ -31,6 +33,12 @@ RUN git clone https://github.com/kishwarshafin/helen.git ; cd helen; make instal
 ENV PATH $PATH:/helen/venv/bin
 
 RUN helen download_models --output_dir helen/venv/bin
+
+#Install RAGOO
+
+RUN git clone https://github.com/malonge/RaGOO.git
+RUN cd RaGOO; python3 setup.py install
+ENV PATH=$PATH:/RaGOO
 
 # Create assembly-env
 COPY environment.yml /
