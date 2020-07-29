@@ -213,9 +213,13 @@ process marginphase {
     """
   marginPhase $alignment $reference /marginPhase/params/$param
   samtools view -S -b output.1.sam > phasing.1.bam
+  rm output.1.sam
   samtools view -S -b output.2.sam > phasing.2.bam
+  rm output.2.sam
   samtools bam2fq phasing.1.bam > hap1.fastq
+  rm phasing.1.bam
   samtools bam2fq phasing.2.bam > hap2.fastq
+  rm phasing.2.bam
 
   
   """		
