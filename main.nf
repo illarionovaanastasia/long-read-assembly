@@ -189,7 +189,7 @@ process minimap_phasing {
   
   rtype = (params.lr_type == "nanopore") ? "map-ont" : "map-pb"
     """
-	minimap2 -ax $rtype $reference $lreads |  samtools samtools sort -o output.bam
+	minimap2 -ax $rtype $reference $lreads |  samtools sort -o output.bam
 	
   """
   
@@ -209,10 +209,11 @@ process marginphase {
     file "*" into marginphase_results
   
   script:
+  param = (params.lr_type == "nanopore") ? "params.nanopore.json" : "params.pacbio.json"
     """
-  marginPhase $alignment $reference -o phasing
-  samtools view -S -b phasing.1.sam > phasing.1.bam
-  samtools view -S -b phasing.2.sam > phasing.2.bam
+  marginPhase $alignment $reference /marginPhase/params/$param
+  samtools view -S -b output.1.sam > phasing.1.bam
+  samtools view -S -b output.2.sam > phasing.2.bam
   samtools bam2fq phasing.1.bam > hap1.fastq
   samtools bam2fq phasing.2.bam > hap2.fastq
 
@@ -223,7 +224,6 @@ process marginphase {
 
 // Create assembly with FLYE
 process flye {
-  tag "${lreads.baseName}"
   publishDir "${params.outdir}flye", mode: 'copy'
   
   input:
@@ -236,18 +236,19 @@ process flye {
   
   script:
     """
-  flye --nano-raw $lhap1 --genome-size $params.genomeSize -t 60 --out-dir ${params.outdir}flye1
-  mv ${params.outdir}flye1/assembly.fasta assembly1.fasta
-  flye --nano-raw $lhap2 --genome-size $params.genomeSize -t 60 --out-dir ${params.outdir}flye2
-  mv ${params.outdir}flye2/assembly.fasta assembly2.fasta
+  flye --nano-raw $hap1 --genome-size $params.genomeSize --threads 60 --out-dir flye1
+  mv flye1/assembly.fasta assembly1.fasta
+     
+  flye --nano-raw $hap2 --genome-size $params.genomeSize --threads 60 --out-dir flye2
+  mv flye2/assembly.fasta assembly2.fasta
   
   """		
 }
 
 
 // Map long reads to assembly with minimap2
-process minimappolishing {
-  publishDir "${params.outdir}/minimappolishing", mode: 'copy'
+process minimap_polishing {
+  publishDir "${params.outdir}/minimap_polishing", mode: 'copy'
   
   input:
     file lreads from reads_map_polishing
@@ -259,10 +260,10 @@ process minimappolishing {
     file "output2.sorted.bam" into polishing_alignment2
   
   script:
-    rtype = ($params.lr_type == "nanopore") ? "map-ont" : "map-pb"
+    rtype = (params.lr_type == "nanopore") ? "map-ont" : "map-pb"
     """
-    minimap2 -ax $rtype $assembly1 $lreads |  samtools samtools sort -o output1.sorted.bam
-    minimap2 -ax $rtype $assembly2 $lreads |  samtools samtools sort -o output2.sorted.bam
+    minimap2 -ax $rtype $assembly1 $lreads |  samtools sort -o output1.sorted.bam
+    minimap2 -ax $rtype $assembly2 $lreads |  samtools sort -o output2.sorted.bam
   """
   
 }
@@ -283,14 +284,19 @@ process minimappolishing {
 
         script:
         """
-        marginpolish $polishing_alignment1 $assembly_polishing_flye1 MP_r941_guppy344_human.json -t 60 -o marginpolish_images_hap1 -f
-        helen polish --image_dir marginpolish_images_hap1 --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 60 --output_dir helen_hap1 --output_prefix polished_hap1
-		cp helen_hap1/polished_hap1.fa helen_hap1.fasta
+		cp /helen/venv/bin/HELEN_r941_guppy344_human.pkl HELEN_r941_guppy344_human.pkl
 		
+		samtools index $polishing_alignment1
+		mkdir marginpolish_images_hap1
+        marginpolish $polishing_alignment1 $assembly_polishing_flye1 /helen/venv/bin/MP_r941_guppy344_human.json -t 60 -o marginpolish_images_hap1/ -f
+        helen polish --image_dir marginpolish_images_hap1/ --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 60 --output_dir helen_hap1/ --output_prefix polished_hap1
+		mv helen_hap1/polished_hap1.fa helen_hap1.fasta
 		
-        marginpolish $polishing_alignment2 $assembly_polishing_flye2 MP_r941_guppy344_human.json -t 60 -o marginpolish_images_hap2 -f
-        helen polish --image_dir marginpolish_images_hap2 --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 60 --output_dir helen_hap2 --output_prefix polished_hap2
-		cp helen_hap2/polished_hap2.fa helen_hap2.fasta
+		samtools index $polishing_alignment2
+		mkdir marginpolish_images_hap2
+        marginpolish $polishing_alignment2 $assembly_polishing_flye2 /helen/venv/bin/MP_r941_guppy344_human.json -t 60 -o marginpolish_images_hap2/ -f
+        helen polish --image_dir marginpolish_images_hap2/ --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 60 --output_dir helen_hap2/ --output_prefix polished_hap2
+		mv helen_hap2/polished_hap2.fa helen_hap2.fasta
         """
 		
 
@@ -338,12 +344,8 @@ process quast_flye {
   script:
     """
     quast  $scaffolds1
-	mkdir quast_hap1
-	mv * /quast_hap1
-
 	quast  $scaffolds2
-	mkdir quast_hap2
-	mv * /quast_hap2
+
     """
 }	
 
