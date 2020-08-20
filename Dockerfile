@@ -19,14 +19,6 @@ RUN git clone https://github.com/SAMtoBAM/MUMandCo.git
 RUN cd MUMandCo; mv *.sh mumandco.sh
 ENV PATH=$PATH:/MUMandCo
 
-
-#Install MarginPhase
-
-RUN git clone https://github.com/benedictpaten/marginPhase.git
-RUN cd marginPhase; git submodule update --init; mkdir build; cd build; cmake ..; make
-ENV PATH=$PATH:/marginPhase/build
-ENV PATH=$PATH:/marginPhase/params
-
 #Install Marginpolish-HELEN
 
 RUN git clone https://github.com/kishwarshafin/helen.git ; cd helen; make install; . ./venv/bin/activate
