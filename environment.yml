@@ -103,7 +103,6 @@ dependencies:
   - pyparsing
   - pyqt
   - pysocks
-  - python-dateutil
   - pytz
   - pyyaml
   - qt
