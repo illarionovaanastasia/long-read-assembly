@@ -207,11 +207,6 @@ try {
  * STEP 2 FLYE Assembly
  */
 
-if (params.genomeSize == 0){
-  log.error "No genome size specified. Necessary for Flye assembly workflow"
-  exit 1
-}
-
 // Create assembly with FLYE
 process flye {
   tag "${lreads[0].baseName}"
@@ -271,8 +266,8 @@ process minimap_polishing {
 
 
         output:
-        file "helen1.fasta" into ragoo_contigs1
-        file "helen2.fasta" into ragoo_contigs2
+        file "helen1.fasta" into ragtag_contigs1
+        file "helen2.fasta" into ragtag_contigs2
 
         script:
         """
@@ -296,26 +291,26 @@ process minimap_polishing {
     }
 	
 	
-   // Scaffold assembly with RaGOO
-    process ragoo {
-        publishDir "${params.outdir}/ragoo_scaffolds", mode: 'copy'
+   // Scaffold assembly with RagTag
+    process ragtag {
+        publishDir "${params.outdir}/ragtag_scaffolds", mode: 'copy'
 
         input:
-        file assembly1 from ragoo_contigs1
-        file assembly2 from ragoo_contigs2
+        file assembly1 from ragtag_contigs1
+        file assembly2 from ragtag_contigs2
         file r_assembly from reference_scaffolding
 
         output:
-        file "ragoo_hap1.fasta" into ragoo_scaffolds_fasta1, mumandco_scaffolds_fasta1
-        file "ragoo_hap2.fasta" into ragoo_scaffolds_fasta2, mumandco_scaffolds_fasta2
+        file "ragtag_hap1.fasta" into ragtag_scaffolds_fasta1, mumandco_scaffolds_fasta1
+        file "ragtag_hap2.fasta" into ragtag_scaffolds_fasta2, mumandco_scaffolds_fasta2
 
         script:
         """
-        ragoo.py $assembly1 $r_assembly 
-	cp ragoo_output/ragoo.fasta ragoo_hap1.fasta
+        ragtag.py $assembly1 $r_assembly ragtag_output/query.corrected.fasta 
+	cp ragtag_output/query.corrected.fasta ragtag_hap1.fasta
 
-        ragoo.py $assembly2 $r_assembly 
-	cp ragoo_output/ragoo.fasta ragoo_hap2.fasta
+        ragtag.py $assembly2 $r_assembly ragtag_output/query.corrected.fasta 
+	cp ragtag_output/query.corrected.fasta ragtag_hap2.fasta
 		
         """
 
@@ -327,8 +322,8 @@ process quast_flye {
   publishDir "${params.outdir}/quast_results", mode: 'copy'
   
   input:
-    file scaffolds1 from ragoo_scaffolds_fasta1
-    file scaffolds2 from ragoo_scaffolds_fasta2
+    file scaffolds1 from ragtag_scaffolds_fasta1
+    file scaffolds2 from ragtag_scaffolds_fasta2
   
   output:
     file "*" into quast_results
@@ -368,6 +363,7 @@ if (params.sv_detection == 'run') {
 		"""
 	}
 }
+
 }
 
 
@@ -405,7 +401,6 @@ if (params.sv_detection == 'run') {
         """
         }
 }
-
 
 /**
  * STEP 2 FLYE Assembly
@@ -467,7 +462,7 @@ process minimap_polishing {
 
 
         output:
-        file "helen.fasta" into ragoo_contigs
+        file "helen.fasta" into ragtag_contigs
 
         script:
         """
@@ -485,21 +480,22 @@ process minimap_polishing {
     }
 	
 	
-   // Scaffold assembly with RaGOO
-    process ragoo {
-        publishDir "${params.outdir}/ragoo_scaffolds", mode: 'copy'
+   // Scaffold assembly with RagTag
+    process ragtag {
+        publishDir "${params.outdir}/ragtag_scaffolds", mode: 'copy'
 
         input:
-        file assembly from ragoo_contigs
+        file assembly from ragtag_contigs
         file r_assembly from reference_scaffolding
 
         output:
-        file "ragoo.fasta" into ragoo_scaffolds_fasta, mumandco_scaffolds_fasta
+        file "ragtag.fasta" into ragtag_scaffolds_fasta, mumandco_scaffolds_fasta
+
 
         script:
         """
-        ragoo.py $assembly $r_assembly 
-	cp ragoo_output/ragoo.fasta ragoo.fasta
+        ragtag.py $assembly $r_assembly ragtag_output/query.corrected.fasta 
+	cp ragtag_output/query.corrected.fasta ragtag.fasta
 		
         """
 
@@ -511,7 +507,7 @@ process quast_flye {
   publishDir "${params.outdir}/quast_results", mode: 'copy'
   
   input:
-    file scaffolds from ragoo_scaffolds_fasta
+    file scaffolds from ragtag_scaffolds_fasta
   
   output:
     file "*" into quast_results
@@ -548,6 +544,7 @@ if (params.sv_detection == 'run') {
 		"""
 	}
 }
+
 }
 
 
