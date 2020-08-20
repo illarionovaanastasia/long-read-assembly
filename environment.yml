@@ -69,7 +69,7 @@ dependencies:
   - backports_abc=0.5=py27_0
   - blas=1.0=mkl
   - boost=1.67.0=py27_4
-  - bzip2=1.0.6=h14c3975_5
+  - bzip2
   - ca-certificates=2019.1.23=0
   - cairo=1.14.12=h8948797_3
   - certifi=2019.3.9=py27_0
