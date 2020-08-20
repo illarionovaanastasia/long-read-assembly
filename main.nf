@@ -21,7 +21,7 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run illarionovaanastasia/longread-haploid-assembly --Reads 'nano_reads.{1,2}.fastq.gz' --status phased --fasta reference.fasta --genomeSize 3300000000 -profile docker --sv_detection run
+    nextflow run illarionovaanastasia/longread-haploid-assembly --Reads 'nano_reads.{1,2}.fastq.gz' --fasta reference.fasta --genomeSize 3300000000 -profile docker --sv_detection run
 
     Required arguments
       --Reads                   Long reads from 1 and 2 haplotypes
@@ -33,7 +33,6 @@ def helpMessage() {
 
     Options:
       --lr_type                     Long read technology. One of 'nanopore' | 'pacbio' . Default: 'nanopore'
-      --status                      If haplotype-specific or unphased fastq files are provided. Default: 'unphased'
       --cont                        What container tech to use. Set to 'docker' if you use docker.
       --sv_detection                Optional step to run SV detection on the de novo assembly if reference was provided. Default: 'false'
       --qc                            optional step to run QC with NanoPlot
@@ -58,7 +57,6 @@ if (params.help){
 // Configurable variables
 params.fasta = ""
 params.sv_detection = false
-params.status = 'unphased'
 params.qc = false
 params.Reads = ""
 params.email = false
@@ -89,19 +87,12 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 // * Create a channel for input long read files
 // */
 
-if (params.status == 'phased'){
-Channel
-    .fromFilePairs( params.Reads, size: 2 )
-    .ifEmpty { exit 1, "Cannot find any long reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!" }
-    .into { reads_qc; reads_flye; reads_map_polishing }
-}
 
-if (params.status == 'unphased'){
 Channel
     .fromPath( params.Reads)
     .ifEmpty { exit 1, "Cannot find any long reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!" }
     .into { reads_qc; reads_flye; reads_map_polishing }
-}
+
 
 ///*
 // * Create a channel for reference assembly
@@ -164,219 +155,8 @@ try {
 
 
 
-
-
-
-
-
-
-
-
-// WORKFLOW FOR PHASED READS
-
-
- if (params.status == 'phased'){
-
-/**
- * STEP 1 Reads QC
- * Only executed if docker is used
- */
- if (params.qc == 'run') {
-    process nanoqc {
-        tag "${lreads[0].baseName}"
-        publishDir "${params.outdir}/nanoqc", mode: 'copy'
-
-        input:
-        set val(name), file(lreads) from reads_qc
-
-        output:
-        file "*" into nanoqc_results
-
-        script:
-        ftype = (lreads.extension == "fasta" || lreads.extension == "fa") ? "--fasta" : "--fastq"
-        """
-        source activate nanoqc-env
-        NanoPlot $ftype ${lreads[0]} -o haplotype1_qc
-        NanoPlot $ftype ${lreads[1]} -o haplotype2_qc 
-        """
-        }
-}
-
-
-/**
- * STEP 2 FLYE Assembly
- */
-
-// Create assembly with FLYE
-process flye {
-  tag "${lreads[0].baseName}"
-  publishDir "${params.outdir}flye", mode: 'copy'
-  
-  input:
-    set val(name), file(lreads) from reads_flye	
-  
-  output:
-    file "assembly_hap1.fasta" into assembly_flye1, assembly_polishing_flye1
-    file "assembly_hap2.fasta" into assembly_flye2, assembly_polishing_flye2
-
-  script:
-    """
-  flye --nano-raw ${lreads[0]} --genome-size $params.genomeSize --threads 60 --out-dir flye_hap1
-  mv flye_hap1/assembly.fasta assembly_hap1.fasta
-
-  flye --nano-raw ${lreads[1]} --genome-size $params.genomeSize --threads 60 --out-dir flye_hap2
-  mv flye_hap2/assembly.fasta assembly_hap2.fasta
-  
-  """		
-}
-
-
-// Map long reads to assembly with minimap2
-process minimap_polishing {
-  tag "${lreads[0].baseName}"
-  publishDir "${params.outdir}/minimap_polishing", mode: 'copy'
-  
-  input:
-    set val(name), file(lreads) from reads_map_polishing
-    file assembly from assembly_flye
-  
-  output:
-    file "output.sorted1.bam" into polishing_alignment1
-    file "output.sorted2.bam" into polishing_alignment2
-  
-  script:
-    rtype = (params.lr_type == "nanopore") ? "map-ont" : "map-pb"
-    """
-    minimap2  -t 60 -ax $rtype $assembly ${lreads[0]} |  samtools sort -@ 60 -o output.sorted1.bam
-
-    minimap2  -t 60 -ax $rtype $assembly ${lreads[1]} |  samtools sort -@ 60 -o output.sorted2.bam
-
-  """
-  
-}
-
-  // Polish flye assembly with MarginPhase-HELEN pipeline
-    process polishing {
-        publishDir "${params.outdir}/polishing", mode: 'copy'
-
-        input:
-        file polishing_alignment1 from polishing_alignment1
-        file polishing_alignment2 from polishing_alignment2
-        file assembly_polishing_flye from assembly_polishing_flye
-
-
-        output:
-        file "helen1.fasta" into ragtag_contigs1
-        file "helen2.fasta" into ragtag_contigs2
-
-        script:
-        """
-	cp /helen/venv/bin/HELEN_r941_guppy344_human.pkl HELEN_r941_guppy344_human.pkl
-		
-	samtools index $polishing_alignment1
-	mkdir marginpolish_images1
-        marginpolish $polishing_alignment1 $assembly_polishing_flye /helen/venv/bin/MP_r941_guppy344_human.json -t 60 -o marginpolish_images1/ -f
-        helen polish --image_dir marginpolish_images1/ --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 60 --output_dir helen1/ --output_prefix polished
-	mv helen1/polished.fa helen1.fasta
-
-        samtools index $polishing_alignment2
-	mkdir marginpolish_images2
-        marginpolish $polishing_alignment2 $assembly_polishing_flye /helen/venv/bin/MP_r941_guppy344_human.json -t 60 -o marginpolish_images2/ -f
-        helen polish --image_dir marginpolish_images2/ --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 60 --output_dir helen2/ --output_prefix polished
-	mv helen2/polished.fa helen2.fasta  
-
-        """
-		
-
-    }
-	
-	
-   // Scaffold assembly with RagTag
-    process ragtag {
-        publishDir "${params.outdir}/ragtag_scaffolds", mode: 'copy'
-
-        input:
-        file assembly1 from ragtag_contigs1
-        file assembly2 from ragtag_contigs2
-        file r_assembly from reference_scaffolding
-
-        output:
-        file "ragtag_hap1.fasta" into ragtag_scaffolds_fasta1, mumandco_scaffolds_fasta1
-        file "ragtag_hap2.fasta" into ragtag_scaffolds_fasta2, mumandco_scaffolds_fasta2
-
-        script:
-        """
-        ragtag.py $assembly1 $r_assembly ragtag_output/query.corrected.fasta 
-	cp ragtag_output/query.corrected.fasta ragtag_hap1.fasta
-
-        ragtag.py $assembly2 $r_assembly ragtag_output/query.corrected.fasta 
-	cp ragtag_output/query.corrected.fasta ragtag_hap2.fasta
-		
-        """
-
-    }
-	
-
-// Quast for flye pipeline
-process quast_flye {
-  publishDir "${params.outdir}/quast_results", mode: 'copy'
-  
-  input:
-    file scaffolds1 from ragtag_scaffolds_fasta1
-    file scaffolds2 from ragtag_scaffolds_fasta2
-  
-  output:
-    file "*" into quast_results
-  
-  script:
-    """
-    quast  $scaffolds1 -o quast_hap1
-    quast  $scaffolds2 -o quast_hap2
-
-    """
-}	
-
-
-    
-
-/*
- * Step 3 SV-detection
- */
-if (params.sv_detection == 'run') {
-    process mumandco {
-        tag "$name"
-        publishDir "${params.outdir}/mumandco", mode: 'copy'
-
-        input:
-        file scaffolds1 from mumandco_scaffolds_fasta1
-        file scaffolds2 from mumandco_scaffolds_fasta2
-        file r_assembly from sv_reference
-
-        output:
-        file "*" into mumandco
-
-        script:
-		"""
-        bash mumandco.sh -r $r_assembly -q $scaffolds1 -o ${name}_hap1 -g $params.genomeSize
-        bash mumandco.sh -r $r_assembly -q $scaffolds2 -o ${name}_hap2 -g $params.genomeSize
-
-		"""
-	}
-}
-
-}
-
-
-
-
-
-
-
-
 // WORKFLOW FOR UNPHASED READS
 
-
- if (params.status == 'unphased'){
 
 /**
  * STEP 1 Reads QC
@@ -545,7 +325,6 @@ if (params.sv_detection == 'run') {
 	}
 }
 
-}
 
 
 
