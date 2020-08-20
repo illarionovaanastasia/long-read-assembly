@@ -26,12 +26,6 @@ ENV PATH $PATH:/helen/venv/bin
 
 RUN helen download_models --output_dir helen/venv/bin
 
-#Install RAGOO
-
-RUN git clone https://github.com/malonge/RaGOO.git
-RUN cd RaGOO; python3 setup.py install
-ENV PATH=$PATH:/RaGOO
-
 # Create assembly-env
 COPY environment.yml /
 RUN conda env create -f /environment.yml && conda clean -a
