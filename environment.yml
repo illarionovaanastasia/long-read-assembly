@@ -146,13 +146,13 @@ dependencies:
   - pyyaml=3.13=py27h14c3975_0
   - qt=5.6.3=h8bf5577_3
   - readline=7.0=h7b6447c_5
-  - requests=2.21.0=py27_0
-  - setuptools=40.8.0=py27_0
+  - requests
+  - setuptools
   - singledispatch=3.4.0.3=py27_0
   - sip=4.18.1=py27hf484d3e_2
   - six=1.12.0=py27_0
   - sqlite=3.26.0=h7b6447c_0
-  - subprocess32=3.5.3=py27h7b6447c_0
+  - subprocess32
   - tornado=5.1.1=py27h7b6447c_0
   - urllib3=1.24.1=py27_0
   - time 
