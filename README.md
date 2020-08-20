@@ -1,4 +1,4 @@
 # long-read-assembly
-De novo phased assembly from long reads
+De novo haploid assembly from long reads
 
 Under development
