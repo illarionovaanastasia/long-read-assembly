@@ -243,7 +243,7 @@ process minimap_polishing {
         script:
         """
 	cp /helen/venv/bin/HELEN_r941_guppy344_human.pkl HELEN_r941_guppy344_human.pkl
-		
+	source activate nanoqc-env	
 	samtools index $polishing_alignment
 	mkdir marginpolish_images
         marginpolish $polishing_alignment $assembly_polishing_flye /helen/venv/bin/MP_r941_guppy344_human.json -t 60 -o marginpolish_images/ -f
