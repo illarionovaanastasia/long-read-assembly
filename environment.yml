@@ -14,7 +14,7 @@ dependencies:
   - java-jdk
   - minimap2
   - quast
-  - samtools
+  - samtools=1.9=h8ee4bcc_1
   - simplejson
   - colormath
   - cryptography
