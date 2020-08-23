@@ -220,6 +220,7 @@ process minimap_polishing {
   script:
     rtype = (params.lr_type == "nanopore") ? "map-ont" : "map-pb"
     """
+    source activate nanoqc-env
     minimap2  -t 60 -ax $rtype $assembly $lreads |  samtools sort -@ 60 -o output.sorted.bam
 
 
