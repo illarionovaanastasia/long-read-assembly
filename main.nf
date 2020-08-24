@@ -315,7 +315,7 @@ if (params.sv_detection == 'run') {
 
         script:
 		"""
-        bash mumandco.sh -r $r_assembly -q $scaffolds -o ${name} -g $params.genomeSize
+        bash mumandco.sh -r $r_assembly -q $scaffolds -o mumandco -g $params.genomeSize
 
 		"""
 	}
