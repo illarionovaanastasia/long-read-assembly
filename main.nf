@@ -270,7 +270,7 @@ process minimap_polishing {
 
         script:
         """
-        ragtag.py $assembly $r_assembly 
+        ragtag.py scaffold $assembly $r_assembly 
 	cp ragtag_output/ragtag.scaffolds.fasta ragtag.fasta
 		
         """
