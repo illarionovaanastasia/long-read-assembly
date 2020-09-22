@@ -199,7 +199,7 @@ process flye {
 
   script:
     """
-  flye --nano-raw $lreads --genome-size $params.genomeSize --threads 30 --out-dir flye --min-overlap 10000
+  flye --nano-raw $lreads --genome-size $params.genomeSize --threads 30 --out-dir flye --min-overlap 4000 --asm-coverage 30
   mv flye/assembly.fasta assembly.fasta
   
   """		
