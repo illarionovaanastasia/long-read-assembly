@@ -199,7 +199,7 @@ process flye {
 
   script:
     """
-  flye --nano-raw $lreads --genome-size $params.genomeSize --threads 30 --out-dir flye --min-overlap 4000 --asm-coverage 30
+  flye --nano-raw $lreads --genome-size $params.genomeSize --threads 10 --out-dir flye --min-overlap 4000 --asm-coverage 30
   mv flye/assembly.fasta assembly.fasta
   
   """		
@@ -221,7 +221,7 @@ process minimap_polishing {
     rtype = (params.lr_type == "nanopore") ? "map-ont" : "map-pb"
     """
     source activate nanoqc-env
-    minimap2  -t 60 -ax $rtype $assembly $lreads |  samtools sort -@ 60 -o output.sorted.bam
+    minimap2  -t 10 -ax $rtype $assembly $lreads |  samtools sort -@ 10 -o output.sorted.bam
 
 
   """
@@ -246,8 +246,8 @@ process minimap_polishing {
 	source activate nanoqc-env	
 	samtools index $polishing_alignment
 	mkdir marginpolish_images
-        marginpolish $polishing_alignment $assembly_polishing_flye /helen/venv/bin/MP_r941_guppy344_human.json -t 60 -o marginpolish_images/ -f
-        helen polish --image_dir marginpolish_images/ --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 60 --output_dir helen/ --output_prefix polished
+        marginpolish $polishing_alignment $assembly_polishing_flye /helen/venv/bin/MP_r941_guppy344_human.json -t 10 -o marginpolish_images/ -f
+        helen polish --image_dir marginpolish_images/ --model_path HELEN_r941_guppy344_human.pkl --batch_size 256 --num_workers 0 --threads 10 --output_dir helen/ --output_prefix polished
 	mv helen/polished.fa helen.fasta 
 
         """
